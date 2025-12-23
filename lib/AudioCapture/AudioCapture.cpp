@@ -20,8 +20,8 @@ bool AudioCapture::configureI2S() {
     _i2sConfig.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT;
     _i2sConfig.communication_format = I2S_COMM_FORMAT_STAND_I2S;
     _i2sConfig.intr_alloc_flags = ESP_INTR_FLAG_LEVEL1;
-    _i2sConfig.dma_desc_num = 4;
-    _i2sConfig.dma_frame_num = _bufferSize;
+    _i2sConfig.dma_buf_count = 4;
+    _i2sConfig.dma_buf_len = _bufferSize;
     _i2sConfig.use_apll = false;
     _i2sConfig.tx_desc_auto_clear = false;
     _i2sConfig.fixed_mclk = 0;
