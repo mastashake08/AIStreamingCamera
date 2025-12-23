@@ -57,15 +57,36 @@ private:
     uint32_t _framesSent;
     uint32_t _droppedFrames;
     uint32_t _lastKeepalive;
+    uint32_t _streamId;
+    uint32_t _transactionId;
+    uint32_t _videoTimestamp;
+    uint32_t _audioTimestamp;
     
-    // RTMP protocol implementation (placeholder)
+    // RTMP protocol implementation
     bool parseURL(const String& url);
     bool performHandshake();
     bool sendConnect();
     bool sendCreateStream();
     bool sendPublish();
     
-    // FLV muxing (placeholder)
+    // RTMP chunking
+    bool sendChunk(uint8_t chunkType, uint32_t timestamp, uint8_t messageType, 
+                   const uint8_t* data, size_t len);
+    bool writeChunkHeader(uint8_t chunkStreamId, uint32_t timestamp, 
+                          size_t messageLength, uint8_t messageType, uint32_t streamId);
+    
+    // AMF encoding
+    void writeAMFString(uint8_t* buf, int& pos, const String& str);
+    void writeAMFNumber(uint8_t* buf, int& pos, double num);
+    void writeAMFBoolean(uint8_t* buf, int& pos, bool val);
+    void writeAMFNull(uint8_t* buf, int& pos);
+    void writeAMFObject(uint8_t* buf, int& pos);
+    void writeAMFObjectEnd(uint8_t* buf, int& pos);
+    void writeAMFProperty(uint8_t* buf, int& pos, const String& name, double value);
+    void writeAMFPropertyString(uint8_t* buf, int& pos, const String& name, const String& value);
+    void writeAMFPropertyBool(uint8_t* buf, int& pos, const String& name, bool value);
+    
+    // FLV muxing
     bool sendFLVHeader();
     bool sendVideoData(const uint8_t* data, size_t len, uint32_t timestamp);
     bool sendAudioData(const uint8_t* data, size_t len, uint32_t timestamp);
