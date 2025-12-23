@@ -8,12 +8,6 @@
 #define CAMERA_JPEG_QUALITY 12               // 0-63, lower means higher quality
 #define CAMERA_FB_COUNT     2                // Frame buffer count (double buffering)
 
-// AI Model Configuration
-#define AI_MODEL_PATH       "/model.tflite"
-#define AI_INFERENCE_FPS    10               // Run inference at 10 FPS
-#define AI_INPUT_WIDTH      224
-#define AI_INPUT_HEIGHT     224
-
 // Audio Configuration
 #define AUDIO_SAMPLE_RATE   16000            // 16kHz for voice
 #define AUDIO_BUFFER_SIZE   1024             // Samples per buffer
@@ -44,10 +38,6 @@
 #define TASK_AUDIO_STACK_SIZE     4096
 #define TASK_AUDIO_PRIORITY       2
 #define TASK_AUDIO_CORE           1          // App CPU
-
-#define TASK_AI_STACK_SIZE        8192
-#define TASK_AI_PRIORITY          1
-#define TASK_AI_CORE              1          // App CPU
 
 #define TASK_STREAM_STACK_SIZE    8192
 #define TASK_STREAM_PRIORITY      3

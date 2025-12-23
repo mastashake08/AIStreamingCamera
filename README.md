@@ -6,10 +6,11 @@ AIoT streaming camera for Seeed XIAO ESP32-S3 Sense with on-device AI inference,
 
 - 📷 **OV2640 Camera** - QVGA/VGA video capture with PSRAM buffering
 - 🎤 **PDM Microphone** - 16kHz audio capture via I2S
-- 🧠 **AI Inference** - On-device ML processing (stub ready for ESP-DL, TensorFlow Lite Micro, or Edge Impulse)
+- 🧠 **AI Inference** - TensorFlow Lite models (embedded or SD card)
 - 📡 **BLE Provisioning** - Wireless WiFi and RTMP credential configuration
 - 🌐 **RTMP Streaming** - Live video/audio streaming to YouTube, Twitch, or custom servers
 - 💾 **NVS Storage** - Persistent credential storage
+- 💳 **SD Card Support** - Load AI models dynamically from SD card
 - ⚡ **Dual-Core Architecture** - Optimized task distribution across ESP32-S3 cores
 
 ## Hardware Requirements
@@ -25,6 +26,7 @@ AIoT streaming camera for Seeed XIAO ESP32-S3 Sense with on-device AI inference,
 - Camera module must be connected to XIAO ESP32-S3 Sense
 - USB-C cable for programming (left port marked "USB")
 - Power via USB-C (5V) or battery connector
+- Optional: SD card module via SPI for loading AI models (see [SD_CARD_MODELS.md](docs/SD_CARD_MODELS.md))
 
 ## Architecture
 
@@ -181,23 +183,32 @@ AIStreamingCamera/
 
 ## AI Model Integration
 
-### Recommended: ESP-DL (Espressif Deep Learning)
-```bash
-# Add to platformio.ini
-lib_deps = 
-    espressif/esp-dl@^1.0.0
+### TensorFlow Lite (Implemented)
+
+The project uses **TensorFlowLite_ESP32** library for on-device inference.
+
+**Load Model from Flash (Embedded):**
+```cpp
+#include "include/my_model.h"
+aiInference.loadModel(my_model_data, my_model_data_len);
 ```
 
-### Alternative: TensorFlow Lite Micro
-- Manual integration required
-- See [TensorFlow Lite Micro documentation](https://github.com/tensorflow/tflite-micro)
+**Load Model from SD Card:**
+```cpp
+#include <SD.h>
+SD.begin(SD_CS_PIN);
+aiInference.loadModelFromFile("/models/my_model.tflite");
+```
 
-### Alternative: Edge Impulse
-- Train model in Edge Impulse Studio
-- Export C++ library
-- Add to `lib/` folder
+**Documentation:**
+- [AI_INTEGRATION.md](docs/AI_INTEGRATION.md) - Model conversion, optimization, usage
+- [SD_CARD_MODELS.md](docs/SD_CARD_MODELS.md) - Loading models from SD card
+- [sample_model.h](include/sample_model.h) - Example embedded model format
 
-See [include/model_placeholder.h](include/model_placeholder.h) for detailed integration instructions.
+### Alternative ML Frameworks
+- **ESP-DL**: Espressif's optimized library
+- **Edge Impulse**: End-to-end ML pipeline with web interface
+- **Custom ONNX**: For advanced use cases
 
 ## Troubleshooting
 

@@ -5,7 +5,6 @@
 #include <WiFiManager.h>
 #include <CameraCapture.h>
 #include <AudioCapture.h>
-#include <AIInference.h>
 #include <RTMPClient.h>
 
 // ============================================================================
@@ -31,7 +30,6 @@ BLEProvisioning bleProvisioning;
 WiFiManager wifiManager;
 CameraCapture camera;
 AudioCapture audio;
-AIInference aiModel;
 RTMPClient rtmpClient;
 
 // Credentials
@@ -41,13 +39,11 @@ String rtmpURL, rtmpKey;
 // FreeRTOS Task Handles
 TaskHandle_t cameraTaskHandle = NULL;
 TaskHandle_t audioTaskHandle = NULL;
-TaskHandle_t aiTaskHandle = NULL;
 TaskHandle_t streamTaskHandle = NULL;
 
 // Shared data queues
 QueueHandle_t videoFrameQueue = NULL;
 QueueHandle_t audioBufferQueue = NULL;
-QueueHandle_t inferenceResultQueue = NULL;
 
 // LED control
 void setLED(bool on) {
@@ -76,10 +72,8 @@ void cameraTask(void* parameter) {
             camera_fb_t* fb = camera.captureFrame();
             
             if (fb) {
-                // Send frame to AI inference queue
-                if (aiTaskHandle != NULL) {
-                    xQueueSend(videoFrameQueue, &fb, 0);  // Non-blocking
-                }
+                // Send frame to streaming queue
+                xQueueSend(videoFrameQueue, &fb, 0);  // Non-blocking
                 
                 // Note: Frame will be released by streaming task
             }
@@ -110,41 +104,6 @@ void audioTask(void* parameter) {
     }
     
     free(audioBuffer);
-}
-
-// AI inference task (Core 1 - App CPU)
-void aiTask(void* parameter) {
-    Serial.println("Task: AI inference task started");
-    
-    camera_fb_t* fb = NULL;
-    InferenceResult result;
-    uint32_t frameCounter = 0;
-    
-    while (true) {
-        if (currentState == AppState::STREAMING) {
-            // Get frame from queue (with timeout)
-            if (xQueueReceive(videoFrameQueue, &fb, pdMS_TO_TICKS(100)) == pdTRUE) {
-                frameCounter++;
-                
-                // Run inference at reduced rate (e.g., 10 FPS)
-                if (frameCounter % (30 / AI_INFERENCE_FPS) == 0) {
-                    if (aiModel.isModelLoaded()) {
-                        bool success = aiModel.runInference(fb, result);
-                        
-                        if (success) {
-                            Serial.printf("AI: Detected '%s' (%.2f%%) in %dms\n",
-                                         result.label, result.confidence * 100, 
-                                         result.inferenceTime);
-                        }
-                    }
-                }
-                
-                // Don't release frame here - streaming task will handle it
-            }
-        } else {
-            vTaskDelay(pdMS_TO_TICKS(100));
-        }
-    }
 }
 
 // RTMP streaming task (Core 0 - Protocol CPU)
@@ -274,16 +233,6 @@ void enterStreaming() {
     );
     
     xTaskCreatePinnedToCore(
-        aiTask,
-        "AITask",
-        TASK_AI_STACK_SIZE,
-        NULL,
-        TASK_AI_PRIORITY,
-        &aiTaskHandle,
-        TASK_AI_CORE
-    );
-    
-    xTaskCreatePinnedToCore(
         streamTask,
         "StreamTask",
         TASK_STREAM_STACK_SIZE,
@@ -305,7 +254,7 @@ void setup() {
     Serial.begin(115200);
     delay(1000);
     Serial.println("\n\n=================================");
-    Serial.println("AI Streaming Camera v1.0");
+    Serial.println("Streaming Camera v1.0");
     Serial.println("=================================\n");
     
     // Initialize LED
@@ -340,19 +289,6 @@ void setup() {
     // Create queues
     videoFrameQueue = xQueueCreate(2, sizeof(camera_fb_t*));
     audioBufferQueue = xQueueCreate(4, sizeof(void*));
-    inferenceResultQueue = xQueueCreate(1, sizeof(InferenceResult));
-    
-    // Load AI model (optional - requires model binary)
-    // To add a model:
-    // 1. Convert your .tflite model to C array: xxd -i model.tflite > model.h
-    // 2. Include model.h and call: aiModel.loadModel(model_data, model_data_len)
-    // Example:
-    // if (aiModel.loadModel(model_data, model_data_len)) {
-    //     Serial.println("✓ AI model loaded");
-    // } else {
-    //     Serial.println("⚠ AI model not loaded");
-    // }
-    Serial.println("⚠ AI model not configured (add model binary to enable)");
     
     Serial.println("\nHardware initialization complete\n");
     
